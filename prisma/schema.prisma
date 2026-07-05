@@ -1,0 +1,69 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Company {
+  id           Int           @id @default(autoincrement())
+  name         String        @unique
+  industry     String?
+  location     String?
+  url          String?
+  applications Application[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@map("companies")
+}
+
+model Application {
+  id             Int       @id @default(autoincrement())
+  companyId      Int
+  company        Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  jobTitle       String
+  dateApplied    DateTime?
+  source         String?
+  postingUrl     String?
+  expectedSalary Int?
+  stage          Stage     @default(WISHLIST)
+  notes          Note[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("applications")
+}
+
+model Note {
+  id            Int         @id @default(autoincrement())
+  applicationId Int
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  title         String
+  content       String
+  type          NoteType    @default(GENERAL)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("notes")
+}
+
+enum Stage {
+  WISHLIST
+  APPLIED
+  ASSESSMENT
+  INTERVIEW
+  OFFERED
+  REJECTED
+}
+
+enum NoteType {
+  GENERAL
+  INTERVIEW
+  ASSESSMENT
+  FEEDBACK
+}

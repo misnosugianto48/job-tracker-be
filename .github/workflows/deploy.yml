@@ -1,4 +1,4 @@
-name: Backend CI/CD Pipeline
+name: Backend CI/CD Pipeline (Docker)
 
 on:
   push:
@@ -49,9 +49,6 @@ jobs:
       env:
         DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/job_tracker_test?schema=public"
 
-    - name: Build TypeScript code
-      run: npm run build
-
     - name: Setup SSH Key
       run: |
         mkdir -p ~/.ssh
@@ -59,21 +56,21 @@ jobs:
         chmod 600 ~/.ssh/id_ed25519
         ssh-keyscan -H ${{ secrets.VPS_IP }} >> ~/.ssh/known_hosts
 
-    - name: Deploy Backend to Biznet GIO VPS
+    - name: Transfer Backend Files to VPS
       run: |
         # Create target directory on VPS
         ssh -i ~/.ssh/id_ed25519 ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }} "mkdir -p ${{ secrets.VPS_TARGET_DIR }}/backend"
         
-        # Sync compiled files
-        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" --delete dist/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }}:${{ secrets.VPS_TARGET_DIR }}/backend/dist/
-        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" --delete prisma/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }}:${{ secrets.VPS_TARGET_DIR }}/backend/prisma/
-        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" package.json package-lock.json ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }}:${{ secrets.VPS_TARGET_DIR }}/backend/
+        # Sync backend files (exclude local dev dependencies / builds)
+        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" --delete --exclude 'node_modules' --exclude 'dist' ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }}:${{ secrets.VPS_TARGET_DIR }}/backend/
+        
+        # Copy docker-compose.yml to the root directory
+        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" docker-compose.yml ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }}:${{ secrets.VPS_TARGET_DIR }}/
 
-    - name: Restart PM2 Application
+    - name: Build and Start Backend Containers on VPS
       run: |
         ssh -i ~/.ssh/id_ed25519 ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }} "
-          cd ${{ secrets.VPS_TARGET_DIR }}/backend &&
-          npm install --production &&
-          npx prisma generate &&
-          pm2 restart job-tracker-api || pm2 start dist/server.js --name 'job-tracker-api'
+          cd ${{ secrets.VPS_TARGET_DIR }} &&
+          docker compose up --build -d db backend &&
+          docker compose exec -T backend npx prisma migrate deploy
         "

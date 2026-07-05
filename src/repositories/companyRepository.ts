@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import prisma from "../lib/prisma.js";
+import prisma from "../lib/prisma";
 
 export class CompanyRepository {
   async create(data: Prisma.CompanyCreateInput) {

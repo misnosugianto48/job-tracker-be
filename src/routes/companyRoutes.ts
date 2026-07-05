@@ -5,7 +5,7 @@ import {
   getCompanyById,
   updateCompany,
   deleteCompany,
-} from "../controllers/companyController.js";
+} from "../controllers/companyController";
 
 const router = Router();
 

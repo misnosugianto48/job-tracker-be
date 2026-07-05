@@ -1,5 +1,5 @@
 import { Prisma, Stage } from "@prisma/client";
-import prisma from "../lib/prisma.js";
+import prisma from "../lib/prisma";
 
 export class ApplicationRepository {
   async create(data: Prisma.ApplicationUncheckedCreateInput) {

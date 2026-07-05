@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { companyRepository } from "../repositories/companyRepository.js";
+import { companyRepository } from "../repositories/companyRepository";
 
 // Helper to handle Prisma errors
 const handlePrismaError = (error: any, res: Response) => {

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { applicationRepository } from "../repositories/applicationRepository.js";
+import { applicationRepository } from "../repositories/applicationRepository";
 import { Stage } from "@prisma/client";
 
 const handlePrismaError = (error: any, res: Response) => {

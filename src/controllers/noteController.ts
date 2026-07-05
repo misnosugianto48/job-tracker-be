@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { noteRepository } from "../repositories/noteRepository.js";
+import { noteRepository } from "../repositories/noteRepository";
 import { NoteType } from "@prisma/client";
 
 const handlePrismaError = (error: any, res: Response) => {

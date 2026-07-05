@@ -2,10 +2,10 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 
-import companyRoutes from "./routes/companyRoutes.js";
-import applicationRoutes from "./routes/applicationRoutes.js";
-import noteRoutes from "./routes/noteRoutes.js";
-import dashboardRoutes from "./routes/dashboardRoutes.js";
+import companyRoutes from "./routes/companyRoutes";
+import applicationRoutes from "./routes/applicationRoutes";
+import noteRoutes from "./routes/noteRoutes";
+import dashboardRoutes from "./routes/dashboardRoutes";
 
 dotenv.config();
 

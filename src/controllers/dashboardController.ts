@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import prisma from "../lib/prisma.js";
+import prisma from "../lib/prisma";
 import { Stage } from "@prisma/client";
 
 // Get dashboard metrics and widgets

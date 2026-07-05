@@ -7,6 +7,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Company {
@@ -32,7 +33,9 @@ model Application {
   postingUrl     String?
   expectedSalary Int?
   stage          Stage     @default(WISHLIST)
+  resumeVersion  String?
   notes          Note[]
+  todos          Todo[]
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -51,6 +54,18 @@ model Note {
   updatedAt     DateTime    @updatedAt
 
   @@map("notes")
+}
+
+model Todo {
+  id            Int         @id @default(autoincrement())
+  applicationId Int
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  title         String
+  completed     Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("todos")
 }
 
 enum Stage {

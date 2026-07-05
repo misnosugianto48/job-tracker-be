@@ -11,9 +11,9 @@ if (!connectionString) {
   throw new Error("DATABASE_URL environment variable is missing.");
 }
 
-const pool = new pg.Pool({ connectionString });
+export const pool = new pg.Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 
-const prisma = new PrismaClient({ adapter });
+export const prisma = new PrismaClient({ adapter });
 
 export default prisma;

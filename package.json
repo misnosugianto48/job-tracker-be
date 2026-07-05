@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node dist/server.js",
+    "test": "jest --runInBand",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate"
   },
@@ -25,10 +26,15 @@
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
     "@types/node": "^26.1.0",
     "@types/pg": "^8.20.0",
+    "@types/supertest": "^7.2.0",
+    "jest": "^30.4.2",
     "nodemon": "^3.1.14",
     "prisma": "^7.8.0",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.11",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3"
   }

@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   db:
@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-job_tracker}
     ports:
-      - "5432:5432"
+      - "5433:5433"
     volumes:
       - db_data:/var/lib/postgresql/data
 
@@ -28,5 +28,17 @@ services:
     depends_on:
       - db
 
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: job_tracker_portainer
+    restart: always
+    command: -H unix:///var/run/docker.sock
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+
 volumes:
   db_data:
+  portainer_data:

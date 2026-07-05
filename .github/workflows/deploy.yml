@@ -71,6 +71,6 @@ jobs:
       run: |
         ssh -i ~/.ssh/id_ed25519 -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }} "
           cd ${{ secrets.VPS_TARGET_DIR }} &&
-          docker compose up --build -d db backend &&
+          docker compose up --build -d db backend portainer &&
           docker compose exec -T backend npx prisma migrate deploy
         "

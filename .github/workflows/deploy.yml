@@ -70,8 +70,21 @@ jobs:
 
       - name: Deploy containers on VPS
         run: |
-          ssh -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }} "
-            cd ${{ secrets.VPS_TARGET_DIR }}/backend &&
-            docker compose up --build -d &&
+          ssh -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }} << 'EOF'
+            set -e
+
+            cd ${{ secrets.VPS_TARGET_DIR }}/backend
+
+            docker compose up --build -d
+
+            echo "===== DATABASE_URL ====="
+            docker compose exec -T backend node -e "console.log(process.env.DATABASE_URL)"
+
+            echo "===== Prisma Version ====="
+            docker compose exec -T backend npx prisma --version
+
+            echo "===== Prisma Config ====="
+            docker compose exec -T backend cat prisma.config.ts
+
             docker compose exec -T backend npx prisma migrate deploy
-          "
+          EOF

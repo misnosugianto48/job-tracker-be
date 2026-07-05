@@ -56,6 +56,19 @@ jobs:
         chmod 600 ~/.ssh/id_ed25519
         ssh-keyscan -H -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_IP }} >> ~/.ssh/known_hosts
 
+    - name: Debug SSH Connection
+      run: |
+        echo "===== SSH Key Fingerprint ====="
+        ssh-keygen -l -f ~/.ssh/id_ed25519
+
+        echo ""
+        echo "===== Testing SSH Connection ====="
+        ssh -vvv \
+          -i ~/.ssh/id_ed25519 \
+          -p ${{ secrets.VPS_PORT }} \
+          ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }} \
+          "echo Connected"
+
     - name: Transfer Backend Files to VPS
       run: |
         # Create target directory on VPS

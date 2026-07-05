@@ -40,11 +40,11 @@ jobs:
 
       - run: npx prisma db push
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/job_tracker_test?schema=public
+          DATABASE_URL: ${DATABASE_URL}
 
       - run: npm test
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/job_tracker_test?schema=public
+          DATABASE_URL: ${DATABASE_URL}
 
       - name: Setup SSH key
         run: |

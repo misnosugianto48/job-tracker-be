@@ -11,6 +11,9 @@ jobs:
   build-test-deploy:
     runs-on: ubuntu-latest
 
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/job_tracker_test?schema=public
+
     services:
       postgres:
         image: postgres:15
@@ -40,12 +43,8 @@ jobs:
 
       - name: Run Prisma migrations on test db
         run: npx prisma db push
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/job_tracker_test?schema=public
 
       - run: npm test
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/job_tracker_test?schema=public
 
       - name: Setup SSH key
         run: |

@@ -1,44 +1,57 @@
-version: "3.8"
-
 services:
   db:
     image: postgres:15-alpine
     container_name: job_tracker_db
-    restart: always
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-job_tracker}
-    ports:
-      - "5433:5433"
+      POSTGRES_USER: ${POSTGRES_USER:?Database user is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password is required}
+      POSTGRES_DB: ${POSTGRES_DB:?Database name is required}
     volumes:
       - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend_network
 
   backend:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: job_tracker_backend
-    restart: always
+    restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-job_tracker}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
       PORT: 5000
+      NODE_ENV: production
     ports:
-      - "5000:5000"
+      - "127.0.0.1:5000:5000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    networks:
+      - backend_network
 
   portainer:
     image: portainer/portainer-ce:latest
     container_name: job_tracker_portainer
-    restart: always
+    restart: unless-stopped
     command: -H unix:///var/run/docker.sock
     ports:
-      - "9000:9000"
+      - "127.0.0.1:9000:9000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
+    networks:
+      - backend_network
 
 volumes:
   db_data:
   portainer_data:
+
+networks:
+  backend_network:
+    driver: bridge

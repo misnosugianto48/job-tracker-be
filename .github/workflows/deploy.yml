@@ -54,22 +54,22 @@ jobs:
         mkdir -p ~/.ssh
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
         chmod 600 ~/.ssh/id_ed25519
-        ssh-keyscan -H ${{ secrets.VPS_IP }} >> ~/.ssh/known_hosts
+        ssh-keyscan -H -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_IP }} >> ~/.ssh/known_hosts
 
     - name: Transfer Backend Files to VPS
       run: |
         # Create target directory on VPS
-        ssh -i ~/.ssh/id_ed25519 ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }} "mkdir -p ${{ secrets.VPS_TARGET_DIR }}/backend"
+        ssh -i ~/.ssh/id_ed25519 -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }} "mkdir -p ${{ secrets.VPS_TARGET_DIR }}/backend"
         
         # Sync backend files (exclude local dev dependencies / builds)
-        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" --delete --exclude 'node_modules' --exclude 'dist' ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }}:${{ secrets.VPS_TARGET_DIR }}/backend/
+        rsync -avz -e "ssh -i ~/.ssh/id_ed25519 -p ${{ secrets.VPS_PORT }}" --delete --exclude 'node_modules' --exclude 'dist' ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }}:${{ secrets.VPS_TARGET_DIR }}/backend/
         
         # Copy docker-compose.yml to the root directory
-        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" docker-compose.yml ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }}:${{ secrets.VPS_TARGET_DIR }}/
+        rsync -avz -e "ssh -i ~/.ssh/id_ed25519 -p ${{ secrets.VPS_PORT }}" docker-compose.yml ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }}:${{ secrets.VPS_TARGET_DIR }}/
 
     - name: Build and Start Backend Containers on VPS
       run: |
-        ssh -i ~/.ssh/id_ed25519 ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }} "
+        ssh -i ~/.ssh/id_ed25519 -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }} "
           cd ${{ secrets.VPS_TARGET_DIR }} &&
           docker compose up --build -d db backend &&
           docker compose exec -T backend npx prisma migrate deploy

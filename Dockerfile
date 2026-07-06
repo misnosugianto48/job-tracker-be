@@ -31,6 +31,9 @@ COPY package*.json ./
 COPY prisma ./prisma/
 COPY prisma.config.ts ./prisma.config.ts
 
+COPY entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+
 RUN npm install
 
 # Dummy DATABASE_URL hanya untuk prisma generate saat build

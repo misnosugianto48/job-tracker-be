@@ -7,6 +7,9 @@ COPY package*.json ./
 COPY prisma ./prisma/
 COPY prisma.config.ts ./prisma.config.ts
 
+COPY entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+
 RUN npm install
 
 # Dummy DATABASE_URL hanya untuk prisma generate saat build
@@ -44,8 +47,6 @@ ENV PORT=5000
 
 EXPOSE 5000
 
-COPY entrypoint.sh ./entrypoint.sh
-RUN chmod +x ./entrypoint.sh
 ENTRYPOINT ["./entrypoint.sh"]
 
 CMD ["node", "dist/server.js"]

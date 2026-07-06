@@ -8,6 +8,11 @@ COPY prisma ./prisma/
 COPY prisma.config.ts ./prisma.config.ts
 
 RUN npm install
+
+# Dummy DATABASE_URL hanya untuk prisma generate saat build
+ARG DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
+ENV DATABASE_URL=${DATABASE_URL}
+
 RUN npx prisma generate
 
 COPY . .
@@ -24,6 +29,11 @@ COPY prisma ./prisma/
 COPY prisma.config.ts ./prisma.config.ts
 
 RUN npm install
+
+# Dummy DATABASE_URL hanya untuk prisma generate saat build
+ARG DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
+ENV DATABASE_URL=${DATABASE_URL}
+
 RUN npx prisma generate
 
 # Copy built code from builder

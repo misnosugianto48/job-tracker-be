@@ -5,6 +5,7 @@ WORKDIR /usr/src/app
 
 COPY package*.json ./
 COPY prisma ./prisma/
+COPY prisma.config.ts ./prisma.config.ts
 
 RUN npm install
 RUN npx prisma generate
@@ -20,9 +21,9 @@ WORKDIR /usr/src/app
 
 COPY package*.json ./
 COPY prisma ./prisma/
+COPY prisma.config.ts ./prisma.config.ts
 
-# Install only production dependencies
-RUN npm install --omit=dev
+RUN npm install
 RUN npx prisma generate
 
 # Copy built code from builder

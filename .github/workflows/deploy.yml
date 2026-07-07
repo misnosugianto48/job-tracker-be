@@ -71,19 +71,22 @@ jobs:
         run: |
           ssh -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }} << 'EOF'
             set -e
-
             cd ${{ secrets.VPS_TARGET_DIR }}/backend
 
             docker compose up --build -d
 
+            # Tunggu container stabil
+            sleep 5
+
+            # Debug: cek kenapa container restart jika masih error
+            echo "===== CONTAINER STATUS ====="
+            docker compose ps backend || true
+            echo "===== CONTAINER LOGS ====="
+            docker compose logs --tail=50 backend || true
+
             echo "===== DATABASE_URL ====="
             docker compose exec -T backend node -e "console.log(process.env.DATABASE_URL)"
 
-            echo "===== Prisma Version ====="
-            docker compose exec -T backend npx prisma --version
-
-            echo "===== Prisma Config ====="
-            docker compose exec -T backend cat prisma.config.ts
-
-            docker compose exec -T backend npx prisma migrate deploy
+            echo "===== Prisma Migrate ====="
+            docker compose exec -T backend npx prisma migrate deploy --config ./prisma.config.ts
           EOF

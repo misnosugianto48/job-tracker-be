@@ -1,3 +1,9 @@
+/**
+ * 📚 LEARNER'S NOTE:
+ * This repository handles database interactions for the Todo model.
+ * It encapsulates Prisma queries to separate database logic from controller endpoints.
+ */
+
 import { Prisma } from "@prisma/client";
 import prisma from "../lib/prisma";
 

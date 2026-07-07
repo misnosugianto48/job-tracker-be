@@ -1,3 +1,9 @@
+/**
+ * 📚 LEARNER'S NOTE:
+ * This file contains the Zod validation schemas for all key models (Company, Application, Todo, Note).
+ * It unifies input sanitization and verification on the backend to prevent prototype pollution and database mismatches.
+ */
+
 import { z } from "zod";
 import { Stage, NoteType } from "@prisma/client";
 

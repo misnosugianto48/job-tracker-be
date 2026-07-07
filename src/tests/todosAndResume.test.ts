@@ -1,3 +1,10 @@
+/**
+ * 📚 LEARNER'S NOTE:
+ * This integration test suite executes HTTP requests against our Express app endpoints.
+ * It verifies full CRUD actions on todos, verifies that resumeVersion is successfully read and updated,
+ * and validates that Zod validation works by asserting HTTP 400 responses on invalid payloads.
+ */
+
 import request from "supertest";
 import app from "../app";
 import { prisma, pool } from "../lib/prisma";

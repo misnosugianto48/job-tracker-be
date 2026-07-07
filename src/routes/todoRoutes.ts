@@ -1,3 +1,13 @@
+/**
+ * 📚 LEARNER'S NOTE:
+ * This file maps REST API endpoints for todos (checklist) to their corresponding controller actions.
+ * Endpoints:
+ * - POST /applications/:applicationId/todos -> Create a new todo
+ * - GET /applications/:applicationId/todos -> List todos for an application
+ * - PATCH /todos/:id -> Partial update (e.g. toggle completed status)
+ * - DELETE /todos/:id -> Remove a todo item
+ */
+
 import { Router } from "express";
 import {
   createTodo,

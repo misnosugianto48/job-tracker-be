@@ -1,3 +1,9 @@
+/**
+ * 📚 LEARNER'S NOTE:
+ * This controller processes client requests for the Todo sub-tasks checklist.
+ * It parses URL parameters, invokes the Zod schema parsing, delegates DB calls to the repository, and responds with standardized JSON.
+ */
+
 import { Request, Response } from "express";
 import { todoRepository } from "../repositories/todoRepository";
 import { createTodoSchema, updateTodoSchema } from "../lib/schemas";

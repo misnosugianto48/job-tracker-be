@@ -1,8 +1,15 @@
 import { Request, Response } from "express";
 import { noteRepository } from "../repositories/noteRepository";
-import { NoteType } from "@prisma/client";
+import { createNoteSchema, updateNoteSchema } from "../lib/schemas";
+import { ZodError } from "zod";
 
-const handlePrismaError = (error: any, res: Response) => {
+const handleControllerError = (error: any, res: Response) => {
+  if (error instanceof ZodError) {
+    return res.status(400).json({ error: error.issues[0].message });
+  }
+  if (error.code === "P2025") {
+    return res.status(404).json({ error: "Note not found." });
+  }
   console.error(error);
   return res.status(500).json({ error: "An unexpected database error occurred." });
 };
@@ -10,38 +17,19 @@ const handlePrismaError = (error: any, res: Response) => {
 // Create a new note
 export const createNote = async (req: Request, res: Response) => {
   try {
-    const { applicationId, title, content, type, eventDate } = req.body;
-
-    if (!applicationId || isNaN(parseInt(applicationId, 10))) {
-      return res.status(400).json({ error: "Valid application ID is required." });
-    }
-    if (!title || typeof title !== "string" || title.trim() === "") {
-      return res.status(400).json({ error: "Note title is required." });
-    }
-    if (!content || typeof content !== "string" || content.trim() === "") {
-      return res.status(400).json({ error: "Note content is required." });
-    }
-
-    // Validate NoteType enum if provided
-    let noteType: NoteType = NoteType.GENERAL;
-    if (type) {
-      if (!Object.values(NoteType).includes(type as NoteType)) {
-        return res.status(400).json({ error: `Invalid note type. Must be one of: ${Object.values(NoteType).join(", ")}` });
-      }
-      noteType = type as NoteType;
-    }
+    const validatedData = createNoteSchema.parse(req.body);
 
     const note = await noteRepository.create({
-      applicationId: parseInt(applicationId, 10),
-      title: title.trim(),
-      content: content.trim(),
-      type: noteType,
-      eventDate: eventDate ? new Date(eventDate) : null,
+      applicationId: validatedData.applicationId,
+      title: validatedData.title,
+      content: validatedData.content,
+      type: validatedData.type,
+      eventDate: validatedData.eventDate,
     });
 
     return res.status(201).json(note);
   } catch (error) {
-    return handlePrismaError(error, res);
+    return handleControllerError(error, res);
   }
 };
 
@@ -56,7 +44,7 @@ export const getNotesForApplication = async (req: Request, res: Response) => {
     const notes = await noteRepository.findAllForApplication(applicationId);
     return res.status(200).json(notes);
   } catch (error) {
-    return handlePrismaError(error, res);
+    return handleControllerError(error, res);
   }
 };
 
@@ -68,31 +56,18 @@ export const updateNote = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid note ID." });
     }
 
-    const { title, content, type, eventDate } = req.body;
-
-    if (title !== undefined && (typeof title !== "string" || title.trim() === "")) {
-      return res.status(400).json({ error: "Note title cannot be empty." });
-    }
-    if (content !== undefined && (typeof content !== "string" || content.trim() === "")) {
-      return res.status(400).json({ error: "Note content cannot be empty." });
-    }
-    if (type !== undefined && !Object.values(NoteType).includes(type as NoteType)) {
-      return res.status(400).json({ error: "Invalid note type." });
-    }
+    const validatedData = updateNoteSchema.parse(req.body);
 
     const note = await noteRepository.update(id, {
-      ...(title !== undefined && { title: title.trim() }),
-      ...(content !== undefined && { content: content.trim() }),
-      ...(type !== undefined && { type: type as NoteType }),
-      ...(eventDate !== undefined && { eventDate: eventDate ? new Date(eventDate) : null }),
+      ...(validatedData.title !== undefined && { title: validatedData.title }),
+      ...(validatedData.content !== undefined && { content: validatedData.content }),
+      ...(validatedData.type !== undefined && { type: validatedData.type }),
+      ...(validatedData.eventDate !== undefined && { eventDate: validatedData.eventDate }),
     });
 
     return res.status(200).json(note);
   } catch (error: any) {
-    if (error.code === "P2025") {
-      return res.status(404).json({ error: "Note not found." });
-    }
-    return handlePrismaError(error, res);
+    return handleControllerError(error, res);
   }
 };
 
@@ -104,16 +79,10 @@ export const deleteNote = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid note ID." });
     }
 
-    const note = await noteRepository.delete(id);
-    if (!note) {
-      return res.status(404).json({ error: "Note not found." });
-    }
+    await noteRepository.delete(id);
 
     return res.status(204).send();
   } catch (error: any) {
-    if (error.code === "P2025") {
-      return res.status(404).json({ error: "Note not found." });
-    }
-    return handlePrismaError(error, res);
+    return handleControllerError(error, res);
   }
 };

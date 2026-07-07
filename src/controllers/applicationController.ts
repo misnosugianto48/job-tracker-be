@@ -1,8 +1,16 @@
 import { Request, Response } from "express";
 import { applicationRepository } from "../repositories/applicationRepository";
 import { Stage } from "@prisma/client";
+import { createApplicationSchema, updateApplicationSchema } from "../lib/schemas";
+import { ZodError } from "zod";
 
-const handlePrismaError = (error: any, res: Response) => {
+const handleControllerError = (error: any, res: Response) => {
+  if (error instanceof ZodError) {
+    return res.status(400).json({ error: error.issues[0].message });
+  }
+  if (error.code === "P2025") {
+    return res.status(404).json({ error: "Application not found." });
+  }
   console.error(error);
   return res.status(500).json({ error: "An unexpected database error occurred." });
 };
@@ -10,37 +18,22 @@ const handlePrismaError = (error: any, res: Response) => {
 // Create a new application
 export const createApplication = async (req: Request, res: Response) => {
   try {
-    const { companyId, jobTitle, dateApplied, source, postingUrl, expectedSalary, stage } = req.body;
-
-    if (!companyId || isNaN(parseInt(companyId, 10))) {
-      return res.status(400).json({ error: "Valid company ID is required." });
-    }
-    if (!jobTitle || typeof jobTitle !== "string" || jobTitle.trim() === "") {
-      return res.status(400).json({ error: "Job title is required." });
-    }
-
-    // Validate Stage enum if provided
-    let appStage: Stage = Stage.WISHLIST;
-    if (stage) {
-      if (!Object.values(Stage).includes(stage as Stage)) {
-        return res.status(400).json({ error: `Invalid stage. Must be one of: ${Object.values(Stage).join(", ")}` });
-      }
-      appStage = stage as Stage;
-    }
+    const validatedData = createApplicationSchema.parse(req.body);
 
     const application = await applicationRepository.create({
-      companyId: parseInt(companyId, 10),
-      jobTitle: jobTitle.trim(),
-      dateApplied: dateApplied ? new Date(dateApplied) : null,
-      source: source ? String(source).trim() : null,
-      postingUrl: postingUrl ? String(postingUrl).trim() : null,
-      expectedSalary: expectedSalary ? parseInt(expectedSalary, 10) : null,
-      stage: appStage,
+      companyId: validatedData.companyId,
+      jobTitle: validatedData.jobTitle,
+      dateApplied: validatedData.dateApplied,
+      source: validatedData.source,
+      postingUrl: validatedData.postingUrl,
+      expectedSalary: validatedData.expectedSalary,
+      stage: validatedData.stage,
+      resumeVersion: validatedData.resumeVersion,
     });
 
     return res.status(201).json(application);
   } catch (error) {
-    return handlePrismaError(error, res);
+    return handleControllerError(error, res);
   }
 };
 
@@ -61,7 +54,7 @@ export const getApplications = async (req: Request, res: Response) => {
     const applications = await applicationRepository.findAll({ stage: stageFilter });
     return res.status(200).json(applications);
   } catch (error) {
-    return handlePrismaError(error, res);
+    return handleControllerError(error, res);
   }
 };
 
@@ -80,7 +73,7 @@ export const getApplicationById = async (req: Request, res: Response) => {
 
     return res.status(200).json(application);
   } catch (error) {
-    return handlePrismaError(error, res);
+    return handleControllerError(error, res);
   }
 };
 
@@ -92,33 +85,22 @@ export const updateApplication = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid application ID." });
     }
 
-    const { companyId, jobTitle, dateApplied, source, postingUrl, expectedSalary, stage } = req.body;
-
-    // Validate inputs if they are provided
-    if (jobTitle !== undefined && (typeof jobTitle !== "string" || jobTitle.trim() === "")) {
-      return res.status(400).json({ error: "Job title cannot be empty." });
-    }
-
-    if (stage !== undefined && !Object.values(Stage).includes(stage as Stage)) {
-      return res.status(400).json({ error: "Invalid stage." });
-    }
+    const validatedData = updateApplicationSchema.parse(req.body);
 
     const application = await applicationRepository.update(id, {
-      ...(companyId !== undefined && { companyId: parseInt(companyId, 10) }),
-      ...(jobTitle !== undefined && { jobTitle: jobTitle.trim() }),
-      ...(dateApplied !== undefined && { dateApplied: dateApplied ? new Date(dateApplied) : null }),
-      ...(source !== undefined && { source: source ? String(source).trim() : null }),
-      ...(postingUrl !== undefined && { postingUrl: postingUrl ? String(postingUrl).trim() : null }),
-      ...(expectedSalary !== undefined && { expectedSalary: expectedSalary ? parseInt(expectedSalary, 10) : null }),
-      ...(stage !== undefined && { stage: stage as Stage }),
+      ...(validatedData.companyId !== undefined && { companyId: validatedData.companyId }),
+      ...(validatedData.jobTitle !== undefined && { jobTitle: validatedData.jobTitle }),
+      ...(validatedData.dateApplied !== undefined && { dateApplied: validatedData.dateApplied }),
+      ...(validatedData.source !== undefined && { source: validatedData.source }),
+      ...(validatedData.postingUrl !== undefined && { postingUrl: validatedData.postingUrl }),
+      ...(validatedData.expectedSalary !== undefined && { expectedSalary: validatedData.expectedSalary }),
+      ...(validatedData.stage !== undefined && { stage: validatedData.stage }),
+      ...(validatedData.resumeVersion !== undefined && { resumeVersion: validatedData.resumeVersion }),
     });
 
     return res.status(200).json(application);
   } catch (error: any) {
-    if (error.code === "P2025") {
-      return res.status(404).json({ error: "Application not found." });
-    }
-    return handlePrismaError(error, res);
+    return handleControllerError(error, res);
   }
 };
 
@@ -133,9 +115,6 @@ export const deleteApplication = async (req: Request, res: Response) => {
     await applicationRepository.delete(id);
     return res.status(204).send();
   } catch (error: any) {
-    if (error.code === "P2025") {
-      return res.status(404).json({ error: "Application not found." });
-    }
-    return handlePrismaError(error, res);
+    return handleControllerError(error, res);
   }
 };

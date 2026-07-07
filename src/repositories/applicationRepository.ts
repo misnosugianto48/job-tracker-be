@@ -35,6 +35,11 @@ export class ApplicationRepository {
             createdAt: "desc",
           },
         },
+        todos: {
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
       },
     });
   }

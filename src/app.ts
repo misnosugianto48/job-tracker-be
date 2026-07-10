@@ -11,6 +11,7 @@ import noteRoutes from "./routes/noteRoutes";
 import dashboardRoutes from "./routes/dashboardRoutes";
 import todoRoutes from "./routes/todoRoutes";
 import exportRoutes from "./routes/exportRoutes";
+import contactRoutes from "./routes/contactRoutes";
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use("/api/notes", noteRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/export", exportRoutes);
 app.use("/api", todoRoutes);
+app.use("/api", contactRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: "Job Tracker API is running!" });

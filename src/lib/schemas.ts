@@ -86,3 +86,21 @@ export const updateNoteSchema = createNoteSchema.partial().omit({
     z.number().int().optional()
   ),
 });
+
+// Contact Schemas
+export const createContactSchema = z.object({
+  name: z.string().trim().min(1, "Contact name is required"),
+  role: z.string().trim().nullable().optional(),
+  email: z.preprocess(
+    (arg) => (arg === "" || arg === undefined ? null : arg),
+    z.string().trim().email("Invalid email address").nullable().optional()
+  ),
+  phone: z.string().trim().nullable().optional(),
+  linkedInUrl: z.preprocess(
+    (arg) => (arg === "" || arg === undefined ? null : arg),
+    z.string().trim().url("Invalid URL").nullable().optional()
+  ),
+  notes: z.string().trim().nullable().optional(),
+});
+
+export const updateContactSchema = createContactSchema.partial();

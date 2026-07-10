@@ -85,6 +85,35 @@ export const getDashboardData = async (req: Request, res: Response) => {
       },
     });
 
+    // 4. Salary Analytics & Insights
+    const salaryStats = await prisma.application.aggregate({
+      where: {
+        stage: {
+          in: ["WISHLIST", "APPLIED", "ASSESSMENT", "INTERVIEW", "OFFERED"],
+        },
+        expectedSalary: {
+          not: null,
+        },
+      },
+      _avg: {
+        expectedSalary: true,
+      },
+      _min: {
+        expectedSalary: true,
+      },
+      _max: {
+        expectedSalary: true,
+      },
+      _sum: {
+        expectedSalary: true,
+      },
+    });
+
+    const averageSalary = salaryStats._avg.expectedSalary || 0;
+    const minSalary = salaryStats._min.expectedSalary || 0;
+    const maxSalary = salaryStats._max.expectedSalary || 0;
+    const totalPipelineValue = salaryStats._sum.expectedSalary || 0;
+
     return res.status(200).json({
       summary: {
         counts,
@@ -96,6 +125,12 @@ export const getDashboardData = async (req: Request, res: Response) => {
       },
       upcomingEvents,
       stagnantApplications,
+      salaryAnalytics: {
+        average: Math.round(averageSalary),
+        min: minSalary,
+        max: maxSalary,
+        totalPipelineValue: totalPipelineValue,
+      },
     });
   } catch (error) {
     console.error("Dashboard error:", error);

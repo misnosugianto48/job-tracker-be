@@ -41,6 +41,7 @@ export const createApplication = async (req: Request, res: Response) => {
 export const getApplications = async (req: Request, res: Response) => {
   try {
     const stageQuery = req.query.stage as string | undefined;
+    const searchQuery = req.query.search as string | undefined;
     let stageFilter: Stage | undefined;
 
     if (stageQuery) {
@@ -51,7 +52,10 @@ export const getApplications = async (req: Request, res: Response) => {
       }
     }
 
-    const applications = await applicationRepository.findAll({ stage: stageFilter });
+    const applications = await applicationRepository.findAll({
+      stage: stageFilter,
+      search: searchQuery,
+    });
     return res.status(200).json(applications);
   } catch (error) {
     return handleControllerError(error, res);

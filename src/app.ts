@@ -10,6 +10,7 @@ import applicationRoutes from "./routes/applicationRoutes";
 import noteRoutes from "./routes/noteRoutes";
 import dashboardRoutes from "./routes/dashboardRoutes";
 import todoRoutes from "./routes/todoRoutes";
+import exportRoutes from "./routes/exportRoutes";
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use("/api/companies", companyRoutes);
 app.use("/api/applications", applicationRoutes);
 app.use("/api/notes", noteRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/export", exportRoutes);
 app.use("/api", todoRoutes);
 
 app.get("/", (req, res) => {

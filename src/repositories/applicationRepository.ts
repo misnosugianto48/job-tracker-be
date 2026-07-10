@@ -11,10 +11,16 @@ export class ApplicationRepository {
     });
   }
 
-  async findAll(filters?: { stage?: Stage }) {
+  async findAll(filters?: { stage?: Stage; search?: string }) {
     return prisma.application.findMany({
       where: {
         ...(filters?.stage && { stage: filters.stage }),
+        ...(filters?.search && {
+          OR: [
+            { jobTitle: { contains: filters.search, mode: "insensitive" } },
+            { company: { name: { contains: filters.search, mode: "insensitive" } } },
+          ],
+        }),
       },
       include: {
         company: true,

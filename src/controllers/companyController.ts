@@ -38,7 +38,8 @@ export const createCompany = async (req: Request, res: Response) => {
 // Get all companies
 export const getCompanies = async (req: Request, res: Response) => {
   try {
-    const companies = await companyRepository.findAll();
+    const searchQuery = req.query.search as string | undefined;
+    const companies = await companyRepository.findAll({ search: searchQuery });
     return res.status(200).json(companies);
   } catch (error) {
     return handleControllerError(error, res);

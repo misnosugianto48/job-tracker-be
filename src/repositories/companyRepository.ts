@@ -6,8 +6,17 @@ export class CompanyRepository {
     return prisma.company.create({ data });
   }
 
-  async findAll() {
+  async findAll(filters?: { search?: string }) {
     return prisma.company.findMany({
+      where: {
+        ...(filters?.search && {
+          OR: [
+            { name: { contains: filters.search, mode: "insensitive" } },
+            { industry: { contains: filters.search, mode: "insensitive" } },
+            { location: { contains: filters.search, mode: "insensitive" } },
+          ],
+        }),
+      },
       orderBy: { name: "asc" },
     });
   }

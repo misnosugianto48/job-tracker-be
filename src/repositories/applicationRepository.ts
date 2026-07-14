@@ -11,17 +11,41 @@ export class ApplicationRepository {
     });
   }
 
-  async findAll(filters?: { stage?: Stage; search?: string }) {
-    return prisma.application.findMany({
-      where: {
-        ...(filters?.stage && { stage: filters.stage }),
-        ...(filters?.search && {
-          OR: [
-            { jobTitle: { contains: filters.search, mode: "insensitive" } },
-            { company: { name: { contains: filters.search, mode: "insensitive" } } },
-          ],
+  async findAll(filters?: { stage?: Stage; search?: string; page?: number; limit?: number }) {
+    const where = {
+      ...(filters?.stage && { stage: filters.stage }),
+      ...(filters?.search && {
+        OR: [
+          { jobTitle: { contains: filters.search, mode: "insensitive" as const } },
+          { company: { name: { contains: filters.search, mode: "insensitive" as const } } },
+        ],
+      }),
+    };
+
+    if (filters?.page !== undefined && filters?.limit !== undefined) {
+      const skip = (filters.page - 1) * filters.limit;
+      const take = filters.limit;
+
+      const [data, total] = await Promise.all([
+        prisma.application.findMany({
+          where,
+          include: {
+            company: true,
+          },
+          orderBy: {
+            updatedAt: "desc",
+          },
+          skip,
+          take,
         }),
-      },
+        prisma.application.count({ where }),
+      ]);
+
+      return { data, total };
+    }
+
+    return prisma.application.findMany({
+      where,
       include: {
         company: true,
       },

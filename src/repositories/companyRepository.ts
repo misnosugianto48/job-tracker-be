@@ -6,17 +6,36 @@ export class CompanyRepository {
     return prisma.company.create({ data });
   }
 
-  async findAll(filters?: { search?: string }) {
-    return prisma.company.findMany({
-      where: {
-        ...(filters?.search && {
-          OR: [
-            { name: { contains: filters.search, mode: "insensitive" } },
-            { industry: { contains: filters.search, mode: "insensitive" } },
-            { location: { contains: filters.search, mode: "insensitive" } },
-          ],
+  async findAll(filters?: { search?: string; page?: number; limit?: number }) {
+    const where = {
+      ...(filters?.search && {
+        OR: [
+          { name: { contains: filters.search, mode: "insensitive" as const } },
+          { industry: { contains: filters.search, mode: "insensitive" as const } },
+          { location: { contains: filters.search, mode: "insensitive" as const } },
+        ],
+      }),
+    };
+
+    if (filters?.page !== undefined && filters?.limit !== undefined) {
+      const skip = (filters.page - 1) * filters.limit;
+      const take = filters.limit;
+
+      const [data, total] = await Promise.all([
+        prisma.company.findMany({
+          where,
+          orderBy: { name: "asc" },
+          skip,
+          take,
         }),
-      },
+        prisma.company.count({ where }),
+      ]);
+
+      return { data, total };
+    }
+
+    return prisma.company.findMany({
+      where,
       orderBy: { name: "asc" },
     });
   }

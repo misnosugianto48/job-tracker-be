@@ -39,8 +39,15 @@ export const createCompany = async (req: Request, res: Response) => {
 export const getCompanies = async (req: Request, res: Response) => {
   try {
     const searchQuery = req.query.search as string | undefined;
-    const companies = await companyRepository.findAll({ search: searchQuery });
-    return res.status(200).json(companies);
+    const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+
+    const result = await companyRepository.findAll({ 
+      search: searchQuery,
+      page: isNaN(page as number) ? undefined : page,
+      limit: isNaN(limit as number) ? undefined : limit,
+    });
+    return res.status(200).json(result);
   } catch (error) {
     return handleControllerError(error, res);
   }

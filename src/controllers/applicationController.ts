@@ -42,6 +42,8 @@ export const getApplications = async (req: Request, res: Response) => {
   try {
     const stageQuery = req.query.stage as string | undefined;
     const searchQuery = req.query.search as string | undefined;
+    const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
     let stageFilter: Stage | undefined;
 
     if (stageQuery) {
@@ -52,11 +54,13 @@ export const getApplications = async (req: Request, res: Response) => {
       }
     }
 
-    const applications = await applicationRepository.findAll({
+    const result = await applicationRepository.findAll({
       stage: stageFilter,
       search: searchQuery,
+      page: isNaN(page as number) ? undefined : page,
+      limit: isNaN(limit as number) ? undefined : limit,
     });
-    return res.status(200).json(applications);
+    return res.status(200).json(result);
   } catch (error) {
     return handleControllerError(error, res);
   }

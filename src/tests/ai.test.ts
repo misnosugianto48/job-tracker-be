@@ -136,7 +136,7 @@ describe("AI Job Description Parser Integration Tests", () => {
       expect(response.body).toHaveProperty("companyName", "Fallback Corp");
       expect(mockGenerateContent).toHaveBeenCalledTimes(2);
       expect(mockGenerateContent.mock.calls[0][0].model).toBe("gemini-3.5-flash");
-      expect(mockGenerateContent.mock.calls[1][0].model).toBe("gemini-2.5-flash");
+      expect(mockGenerateContent.mock.calls[1][0].model).toBe("gemini-3.1-flash-lite");
     });
   });
 });

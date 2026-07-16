@@ -54,6 +54,10 @@ describe("AI Mock Interview Coach Integration Tests", () => {
     applicationId = application.id;
   });
 
+  afterAll(async () => {
+    await prisma.$disconnect();
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
   });

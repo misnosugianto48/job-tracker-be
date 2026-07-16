@@ -1,5 +1,6 @@
 import request from "supertest";
 import app from "../app";
+import prisma from "../lib/prisma";
 
 // Mock the GoogleGenAI SDK to avoid external API calls during testing
 const mockGenerateContent = jest.fn();
@@ -24,6 +25,10 @@ jest.mock("@google/genai", () => {
 describe("AI Resume Tailor & Cover Letter Builder Integration Tests", () => {
   beforeAll(() => {
     process.env.GEMINI_API_KEY = "mock-api-key";
+  });
+
+  afterAll(async () => {
+    await prisma.$disconnect();
   });
 
   beforeEach(() => {

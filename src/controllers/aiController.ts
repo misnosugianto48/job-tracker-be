@@ -3,13 +3,19 @@ import { Request, Response } from "express";
 import { ZodError } from "zod";
 import { getGeminiClient } from "../lib/gemini";
 import logger from "../lib/logger";
-import { parseJobSchema } from "../lib/schemas";
+import { parseJobSchema, tailorSchema } from "../lib/schemas";
 
 const handleControllerError = (error: any, res: Response) => {
   if (error instanceof ZodError) {
     const issue = error.issues[0];
+    if (issue.path.includes("jobDescription")) {
+      return res.status(400).json({ error: "jobDescription is required and cannot be empty" });
+    }
     if (issue.path.includes("description")) {
       return res.status(400).json({ error: "description is required and cannot be empty" });
+    }
+    if (issue.path.includes("resumeText")) {
+      return res.status(400).json({ error: "resumeText is required and cannot be empty" });
     }
     return res.status(400).json({ error: issue.message });
   }
@@ -117,3 +123,107 @@ export const parseJobDescription = async (req: Request, res: Response) => {
     return handleControllerError(error, res);
   }
 };
+
+/**
+ * Endpoint to analyze job descriptions against resume and write a cover letter
+ * POST /api/ai/tailor
+ */
+export const tailorResume = async (req: Request, res: Response) => {
+  try {
+    const { jobDescription, resumeText } = tailorSchema.parse(req.body);
+
+    const ai = getGeminiClient();
+
+    const schema = {
+      type: "object",
+      properties: {
+        keySkills: {
+          type: "array",
+          items: { type: "string" },
+          description: "List of matching key skills found in both the job description and the resume."
+        },
+        missingKeywords: {
+          type: "array",
+          items: { type: "string" },
+          description: "List of important skills/keywords from the job description that the resume lacks."
+        },
+        coverLetter: {
+          type: "string",
+          description: "A professional, tailored cover letter draft matching the candidate's experience to the job requirements."
+        }
+      },
+      required: ["keySkills", "missingKeywords", "coverLetter"]
+    };
+
+    const prompt = `
+      You are an expert career coach and professional resume writer.
+      Analyze the following job description and the candidate's resume/CV text.
+      
+      Job Description:
+      \${jobDescription}
+      
+      Candidate Resume/CV:
+      \${resumeText}
+      
+      Tasks:
+      1. Identify matching "keySkills" (skills listed in the job description that the candidate already has in their resume).
+      2. Identify "missingKeywords" (important keywords, skills, or terminologies from the job description that are missing or weak in the candidate's resume).
+      3. Write a highly tailored "coverLetter" draft (professional, engaging, directly addressing the key requirements of the job description, and highlighting how the candidate's experience fits them).
+      
+      Generate a JSON response conforming strictly to the requested schema.
+    `;
+
+    const models = [
+      { name: "gemini-3.5-flash", useThinking: true },
+      { name: "gemini-2.5-flash", useThinking: true },
+      { name: "gemini-2.5-pro", useThinking: true },
+      { name: "gemini-1.5-flash", useThinking: false },
+      { name: "gemini-1.5-pro", useThinking: false },
+    ];
+
+    let lastError: any = null;
+    let response: any = null;
+
+    for (const modelConfig of models) {
+      try {
+        logger.info(`Attempting resume tailoring with model: \${modelConfig.name}`);
+        const config: any = {
+          responseMimeType: "application/json",
+          responseSchema: schema,
+        };
+
+        if (modelConfig.useThinking) {
+          config.thinkingConfig = {
+            thinkingLevel: ThinkingLevel.MEDIUM,
+          };
+        }
+
+        response = await ai.models.generateContent({
+          model: modelConfig.name,
+          contents: prompt,
+          config,
+        });
+
+        if (response && response.text) {
+          logger.info(`Successfully tailored resume using model: \${modelConfig.name}`);
+          break;
+        } else {
+          throw new Error(`Empty response text from model \${modelConfig.name}`);
+        }
+      } catch (error: any) {
+        lastError = error;
+        logger.warn(`Model \${modelConfig.name} failed. Error: \${error.message || error}. Trying fallback model...`);
+      }
+    }
+
+    if (!response || !response.text) {
+      throw lastError || new Error("All Gemini models failed to generate content.");
+    }
+
+    const parsedData = JSON.parse(response.text);
+    return res.status(200).json(parsedData);
+  } catch (error) {
+    return handleControllerError(error, res);
+  }
+};
+

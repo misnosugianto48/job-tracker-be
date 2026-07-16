@@ -111,3 +111,8 @@ export const parseJobSchema = z.object({
   description: z.string().trim().min(1, "Job description cannot be empty"),
 });
 
+export const tailorSchema = z.object({
+  jobDescription: z.string().trim().min(1, "Job description cannot be empty"),
+  resumeText: z.string().trim().min(1, "Resume text cannot be empty"),
+});
+

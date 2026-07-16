@@ -36,6 +36,7 @@ model Application {
   resumeVersion  String?
   notes          Note[]
   todos          Todo[]
+  practiceSessions PracticeSession[]
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -98,4 +99,15 @@ enum NoteType {
   INTERVIEW
   ASSESSMENT
   FEEDBACK
+}
+
+model PracticeSession {
+  id            Int         @id @default(autoincrement())
+  applicationId Int
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  messages      Json        // Array of chat messages: [{ role: "user"|"model", content: string, createdAt: string }]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("practice_sessions")
 }

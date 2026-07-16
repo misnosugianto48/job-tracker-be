@@ -108,7 +108,7 @@ describe("AI Resume Tailor & Cover Letter Builder Integration Tests", () => {
       expect(response.body.coverLetter).toContain("Hiring Manager");
       expect(mockGenerateContent).toHaveBeenCalledTimes(2);
       expect(mockGenerateContent.mock.calls[0][0].model).toBe("gemini-3.5-flash");
-      expect(mockGenerateContent.mock.calls[1][0].model).toBe("gemini-2.5-flash");
+      expect(mockGenerateContent.mock.calls[1][0].model).toBe("gemini-3.1-flash-lite");
     });
   });
 });

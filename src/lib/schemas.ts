@@ -116,3 +116,7 @@ export const tailorSchema = z.object({
   resumeText: z.string().trim().min(1, "Resume text cannot be empty"),
 });
 
+export const practiceChatSchema = z.object({
+  message: z.string().trim().min(1, "message is required and cannot be empty"),
+});
+

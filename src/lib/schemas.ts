@@ -120,3 +120,14 @@ export const practiceChatSchema = z.object({
   message: z.string().trim().min(1, "message is required and cannot be empty"),
 });
 
+export const outreachSchema = z.object({
+  type: z.enum(["EMAIL", "LINKEDIN"], {
+    message: "type must be EMAIL or LINKEDIN",
+  }),
+  intent: z.enum(["FOLLOW_UP", "NETWORKING", "APPLICATION"]),
+  companyName: z.string().trim().min(1, "Company name cannot be empty"),
+  jobTitle: z.string().trim().min(1, "Job title cannot be empty"),
+  recipientName: z.string().trim().optional(),
+  additionalContext: z.string().trim().optional(),
+});
+

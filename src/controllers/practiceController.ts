@@ -1,10 +1,10 @@
+import { ThinkingLevel } from "@google/genai";
 import { Request, Response } from "express";
 import { ZodError } from "zod";
-import prisma from "../lib/prisma";
 import { getGeminiClient } from "../lib/gemini";
 import logger from "../lib/logger";
+import prisma from "../lib/prisma";
 import { practiceChatSchema } from "../lib/schemas";
-import { ThinkingLevel } from "@google/genai";
 
 const handleControllerError = (error: any, res: Response) => {
   if (error instanceof ZodError) {
@@ -101,10 +101,10 @@ Guidelines:
     const ai = getGeminiClient();
     const models = [
       { name: "gemini-3.5-flash", useThinking: true },
-      { name: "gemini-2.5-flash", useThinking: true },
-      { name: "gemini-2.5-pro", useThinking: true },
-      { name: "gemini-1.5-flash", useThinking: false },
-      { name: "gemini-1.5-pro", useThinking: false },
+      { name: "gemini-3.1-flash-lite", useThinking: true },
+      { name: "gemini-3-flash-preview", useThinking: true },
+      { name: "gemini-2.5-flash", useThinking: false },
+      { name: "gemini-2.5-flash-native-audio-preview-12-2025", useThinking: false },
     ];
 
     let lastError: any = null;

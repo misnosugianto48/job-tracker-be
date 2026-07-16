@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { ZodError } from "zod";
 import { getGeminiClient } from "../lib/gemini";
 import logger from "../lib/logger";
-import { parseJobSchema, tailorSchema } from "../lib/schemas";
+import { parseJobSchema, tailorSchema, outreachSchema } from "../lib/schemas";
 
 const handleControllerError = (error: any, res: Response) => {
   if (error instanceof ZodError) {
@@ -226,4 +226,102 @@ export const tailorResume = async (req: Request, res: Response) => {
     return handleControllerError(error, res);
   }
 };
+
+/**
+ * Endpoint to generate personalized professional outreach templates
+ * POST /api/ai/outreach
+ */
+export const generateOutreach = async (req: Request, res: Response) => {
+  try {
+    const { type, intent, companyName, jobTitle, recipientName, additionalContext } = outreachSchema.parse(req.body);
+
+    const ai = getGeminiClient();
+
+    const schema = {
+      type: "object",
+      properties: {
+        subject: {
+          type: "string",
+          description: "Clear and catchy subject line for the email outreach. Leave blank or empty for LinkedIn message."
+        },
+        content: {
+          type: "string",
+          description: "The complete, polished message body."
+        }
+      },
+      required: ["content"]
+    };
+
+    const prompt = `
+      You are an expert career coach and professional copywriter.
+      Write a highly personalized professional outreach message of type "${type}" with the intent "${intent}".
+      
+      Job/Company Details:
+      - Job Title: \${jobTitle}
+      - Company: \${companyName}
+      \${recipientName ? \`- Recipient Name: \${recipientName}\` : ""}
+      \${additionalContext ? \`- Additional Context: \${additionalContext}\` : ""}
+      
+      Guidelines:
+      1. If type is "EMAIL", provide a clear and professional subject line.
+      2. If type is "LINKEDIN", keep it concise (ideally under 300 characters or standard message length) and highly engaging.
+      3. Use a friendly yet professional tone. Do not use placeholders like "[Your Name]". Leave a blank line for signature or sign off professionally.
+      
+      Generate a JSON response conforming strictly to the requested schema.
+    `;
+
+    const models = [
+      { name: "gemini-3.5-flash", useThinking: true },
+      { name: "gemini-2.5-flash", useThinking: true },
+      { name: "gemini-2.5-pro", useThinking: true },
+      { name: "gemini-1.5-flash", useThinking: false },
+      { name: "gemini-1.5-pro", useThinking: false },
+    ];
+
+    let lastError: any = null;
+    let response: any = null;
+
+    for (const modelConfig of models) {
+      try {
+        logger.info(`Attempting outreach generation with model: \${modelConfig.name}`);
+        const config: any = {
+          responseMimeType: "application/json",
+          responseSchema: schema,
+        };
+
+        if (modelConfig.useThinking) {
+          config.thinkingConfig = {
+            thinkingLevel: ThinkingLevel.MEDIUM,
+          };
+        }
+
+        response = await ai.models.generateContent({
+          model: modelConfig.name,
+          contents: prompt,
+          config,
+        });
+
+        if (response && response.text) {
+          logger.info(`Successfully generated outreach message using model: \${modelConfig.name}`);
+          break;
+        } else {
+          throw new Error(`Empty response text from model \${modelConfig.name}`);
+        }
+      } catch (error: any) {
+        lastError = error;
+        logger.warn(`Model \${modelConfig.name} failed. Error: \${error.message || error}. Trying fallback model...`);
+      }
+    }
+
+    if (!response || !response.text) {
+      throw lastError || new Error("All Gemini models failed to generate content.");
+    }
+
+    const parsedData = JSON.parse(response.text);
+    return res.status(200).json(parsedData);
+  } catch (error) {
+    return handleControllerError(error, res);
+  }
+};
+
 

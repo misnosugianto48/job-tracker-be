@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "jest --runInBand --forceExit",
+    "test:coverage": "jest --runInBand --forceExit --coverage",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate"
   },

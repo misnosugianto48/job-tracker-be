@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import helmet from "helmet";
+import { requestLogger, errorHandler } from "./lib/loggerMiddleware";
 
 dotenv.config();
 
@@ -12,12 +13,14 @@ import dashboardRoutes from "./routes/dashboardRoutes";
 import todoRoutes from "./routes/todoRoutes";
 import exportRoutes from "./routes/exportRoutes";
 import contactRoutes from "./routes/contactRoutes";
+import aiRoutes from "./routes/aiRoutes";
 
 const app = express();
 
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+app.use(requestLogger);
 
 // Routes
 app.use("/api/companies", companyRoutes);
@@ -25,11 +28,15 @@ app.use("/api/applications", applicationRoutes);
 app.use("/api/notes", noteRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/export", exportRoutes);
+app.use("/api/ai", aiRoutes);
 app.use("/api", todoRoutes);
 app.use("/api", contactRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: "Job Tracker API is running!" });
 });
+
+// Error handling middleware
+app.use(errorHandler);
 
 export default app;

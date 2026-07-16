@@ -42,6 +42,7 @@ export const createApplicationSchema = z.object({
   }, z.number().int().nonnegative().nullable().optional()),
   stage: stageSchema.default(Stage.WISHLIST),
   resumeVersion: z.string().trim().nullable().optional(),
+  todos: z.array(z.string()).optional(),
 });
 
 export const updateApplicationSchema = createApplicationSchema.partial().omit({
@@ -104,3 +105,9 @@ export const createContactSchema = z.object({
 });
 
 export const updateContactSchema = createContactSchema.partial();
+
+// AI Schemas
+export const parseJobSchema = z.object({
+  description: z.string().trim().min(1, "Job description cannot be empty"),
+});
+

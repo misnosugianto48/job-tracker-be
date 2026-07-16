@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { contactRepository } from "../repositories/contactRepository";
 import { createContactSchema, updateContactSchema } from "../lib/schemas";
 import { ZodError } from "zod";
+import logger from "../lib/logger";
 
 const handleControllerError = (error: any, res: Response) => {
   if (error instanceof ZodError) {
@@ -10,7 +11,7 @@ const handleControllerError = (error: any, res: Response) => {
   if (error.code === "P2025") {
     return res.status(404).json({ error: "Contact not found." });
   }
-  console.error(error);
+  logger.error("Contact controller error:", error);
   return res.status(500).json({ error: "An unexpected database error occurred." });
 };
 

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
 import { Stage } from "@prisma/client";
+import logger from "../lib/logger";
 
 // Get dashboard metrics and widgets
 export const getDashboardData = async (req: Request, res: Response) => {
@@ -133,7 +134,7 @@ export const getDashboardData = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error("Dashboard error:", error);
+    logger.error("Dashboard error:", error);
     return res.status(500).json({ error: "Failed to fetch dashboard metrics." });
   }
 };

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
+import logger from "../lib/logger";
 
 const escapeCsvValue = (val: unknown): string => {
   if (val === null || val === undefined) return "";
@@ -92,7 +93,7 @@ export const exportData = async (req: Request, res: Response) => {
       return res.status(200).json({ companies, applications });
     }
   } catch (error) {
-    console.error("Export error:", error);
+    logger.error("Export error:", error);
     return res.status(500).json({ error: "Failed to export data." });
   }
 };

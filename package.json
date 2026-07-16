@@ -15,19 +15,23 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google/genai": "^2.12.0",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "helmet": "^8.2.0",
+    "morgan": "^1.11.0",
     "pg": "^8.22.0",
+    "winston": "^3.19.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
+    "@types/morgan": "^1.9.10",
     "@types/node": "^26.1.0",
     "@types/pg": "^8.20.0",
     "@types/supertest": "^7.2.0",

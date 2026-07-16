@@ -3,6 +3,7 @@ import { applicationRepository } from "../repositories/applicationRepository";
 import { Stage } from "@prisma/client";
 import { createApplicationSchema, updateApplicationSchema } from "../lib/schemas";
 import { ZodError } from "zod";
+import logger from "../lib/logger";
 
 const handleControllerError = (error: any, res: Response) => {
   if (error instanceof ZodError) {
@@ -11,7 +12,7 @@ const handleControllerError = (error: any, res: Response) => {
   if (error.code === "P2025") {
     return res.status(404).json({ error: "Application not found." });
   }
-  console.error(error);
+  logger.error("Application controller error:", error);
   return res.status(500).json({ error: "An unexpected database error occurred." });
 };
 
@@ -29,7 +30,10 @@ export const createApplication = async (req: Request, res: Response) => {
       expectedSalary: validatedData.expectedSalary,
       stage: validatedData.stage,
       resumeVersion: validatedData.resumeVersion,
-    });
+      todos: validatedData.todos && validatedData.todos.length > 0 ? {
+        create: validatedData.todos.map((title) => ({ title }))
+      } : undefined
+    } as any);
 
     return res.status(201).json(application);
   } catch (error) {

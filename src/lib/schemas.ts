@@ -131,3 +131,10 @@ export const outreachSchema = z.object({
   additionalContext: z.string().trim().optional(),
 });
 
+export const analyzeCvSchema = z.object({
+  fileBase64: z.string().min(1, "fileBase64 is required and cannot be empty"),
+  mimeType: z.string().min(1, "mimeType is required and cannot be empty"),
+  fileName: z.string().trim().optional(),
+  jobDescription: z.string().trim().optional(),
+});
+

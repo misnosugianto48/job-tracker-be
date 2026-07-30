@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { ZodError } from "zod";
 import { getGeminiClient } from "../lib/gemini";
 import logger from "../lib/logger";
-import { parseJobSchema, tailorSchema, outreachSchema } from "../lib/schemas";
+import { parseJobSchema, tailorSchema, outreachSchema, analyzeCvSchema } from "../lib/schemas";
 
 const handleControllerError = (error: any, res: Response) => {
   if (error instanceof ZodError) {
@@ -16,6 +16,12 @@ const handleControllerError = (error: any, res: Response) => {
     }
     if (issue.path.includes("resumeText")) {
       return res.status(400).json({ error: "resumeText is required and cannot be empty" });
+    }
+    if (issue.path.includes("fileBase64")) {
+      return res.status(400).json({ error: "fileBase64 is required and cannot be empty" });
+    }
+    if (issue.path.includes("mimeType")) {
+      return res.status(400).json({ error: "mimeType is required and cannot be empty" });
     }
     return res.status(400).json({ error: issue.message });
   }
@@ -310,6 +316,146 @@ export const generateOutreach = async (req: Request, res: Response) => {
       } catch (error: any) {
         lastError = error;
         logger.warn(`Model \${modelConfig.name} failed. Error: \${error.message || error}. Trying fallback model...`);
+      }
+    }
+
+    if (!response || !response.text) {
+      throw lastError || new Error("All Gemini models failed to generate content.");
+    }
+
+    const parsedData = JSON.parse(response.text);
+    return res.status(200).json(parsedData);
+  } catch (error) {
+    return handleControllerError(error, res);
+  }
+};
+
+/**
+ * Endpoint to analyze a CV file and return feedback (privacy-first, not saved)
+ * POST /api/ai/analyze-cv
+ */
+export const analyzeCv = async (req: Request, res: Response) => {
+  try {
+    const { fileBase64, mimeType, jobDescription } = analyzeCvSchema.parse(req.body);
+
+    const allowedMimeTypes = ["application/pdf", "text/plain"];
+    if (!allowedMimeTypes.includes(mimeType)) {
+      return res.status(400).json({ error: "Unsupported file type. Only PDF and TXT files are allowed." });
+    }
+
+    const ai = getGeminiClient();
+
+    const schema = {
+      type: "object",
+      properties: {
+        atsScore: {
+          type: "integer",
+          description: "An ATS compliance and friendliness score between 0 and 100 based on keyword density, formatting, and sections."
+        },
+        strengths: {
+          type: "array",
+          items: { type: "string" },
+          description: "List of key strengths, skills, and qualifications found in the CV (What Good)."
+        },
+        improvements: {
+          type: "array",
+          items: { type: "string" },
+          description: "List of actionable areas of improvement in terms of phrasing, formatting, metrics, or content (What to Improve)."
+        },
+        missingElements: {
+          type: "array",
+          items: { type: "string" },
+          description: "Key elements, sections, skills, or achievements that are missing and should be added (What to Add)."
+        },
+        otherFeedback: {
+          type: "string",
+          description: "Other feedback, general advice on layout, readability, or ATS compatibility."
+        }
+      },
+      required: ["atsScore", "strengths", "improvements", "missingElements", "otherFeedback"]
+    };
+
+    let prompt = "";
+    if (jobDescription && jobDescription.trim() !== "") {
+      prompt = `
+        You are an expert recruiter and career strategist.
+        Analyze the provided CV document and compare it with this specific Job Description to generate a tailored feedback report, including a suitability and ATS friendliness match score (0 to 100).
+        
+        Job Description:
+        ${jobDescription}
+        
+        Tasks:
+        1. Rate the match and ATS friendliness score from 0 (poor fit/formatting) to 100 (perfect fit & highly optimized).
+        2. List the strengths of the CV (what is good, how it matches the job description requirements).
+        3. List clear, actionable points for improvement to better align with the job description.
+        4. List key skills, requirements, or keywords from the job description that are missing or should be added to the CV.
+        5. Provide any other general advice or formatting feedback.
+        
+        Generate a JSON response conforming strictly to the requested schema.
+      `;
+    } else {
+      prompt = `
+        You are an expert recruiter and career strategist.
+        Analyze the provided CV document and generate a thorough feedback report, including an ATS friendliness score (0 to 100).
+        
+        Tasks:
+        1. Rate the ATS friendliness score from 0 (very poor formatting/keywords) to 100 (fully optimized).
+        2. List the strengths of the CV (what is good, what stands out).
+        3. List clear, actionable points for improvement.
+        4. List elements, keywords, or sections that are missing or should be added to make it stronger.
+        5. Provide any other general advice or formatting feedback.
+        
+        Generate a JSON response conforming strictly to the requested schema.
+      `;
+    }
+
+    const models = [
+      { name: "gemini-3.5-flash", useThinking: true },
+      { name: "gemini-3.1-flash-lite", useThinking: true },
+      { name: "gemini-3-flash-preview", useThinking: true },
+      { name: "gemini-2.5-flash", useThinking: false },
+    ];
+
+    let lastError: any = null;
+    let response: any = null;
+
+    for (const modelConfig of models) {
+      try {
+        logger.info(`Attempting CV analysis with model: ${modelConfig.name}`);
+        const config: any = {
+          responseMimeType: "application/json",
+          responseSchema: schema,
+        };
+
+        if (modelConfig.useThinking) {
+          config.thinkingConfig = {
+            thinkingLevel: ThinkingLevel.MEDIUM,
+          };
+        }
+
+        response = await ai.models.generateContent({
+          model: modelConfig.name,
+          contents: [
+            {
+              inlineData: {
+                data: fileBase64,
+                mimeType: mimeType,
+              },
+            },
+            prompt,
+          ],
+          config,
+        });
+
+        if (response && response.text) {
+          logger.info(`Successfully analyzed CV using model: ${modelConfig.name}`);
+          break;
+        } else {
+          throw new Error(`Empty response text from model ${modelConfig.name}`);
+        }
+      } catch (error: any) {
+        lastError = error;
+        logger.warn(`Model ${modelConfig.name} failed. Error: ${error.message || error}. Trying fallback model...`);
       }
     }
 

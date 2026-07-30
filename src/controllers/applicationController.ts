@@ -30,6 +30,7 @@ export const createApplication = async (req: Request, res: Response) => {
       expectedSalary: validatedData.expectedSalary,
       stage: validatedData.stage,
       resumeVersion: validatedData.resumeVersion,
+      description: validatedData.description,
       todos: validatedData.todos && validatedData.todos.length > 0 ? {
         create: validatedData.todos.map((title) => ({ title }))
       } : undefined
@@ -108,6 +109,7 @@ export const updateApplication = async (req: Request, res: Response) => {
       ...(validatedData.expectedSalary !== undefined && { expectedSalary: validatedData.expectedSalary }),
       ...(validatedData.stage !== undefined && { stage: validatedData.stage }),
       ...(validatedData.resumeVersion !== undefined && { resumeVersion: validatedData.resumeVersion }),
+      ...(validatedData.description !== undefined && { description: validatedData.description }),
     });
 
     return res.status(200).json(application);

@@ -34,6 +34,7 @@ model Application {
   expectedSalary Int?
   stage          Stage     @default(WISHLIST)
   resumeVersion  String?
+  description    String?
   notes          Note[]
   todos          Todo[]
   practiceSessions PracticeSession[]

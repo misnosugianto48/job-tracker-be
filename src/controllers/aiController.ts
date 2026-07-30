@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { ZodError } from "zod";
 import { getGeminiClient } from "../lib/gemini";
 import logger from "../lib/logger";
-import { parseJobSchema, tailorSchema, outreachSchema, analyzeCvSchema } from "../lib/schemas";
+import { parseJobSchema, tailorSchema, outreachSchema, analyzeCvSchema, jobFitSchema } from "../lib/schemas";
 
 const handleControllerError = (error: any, res: Response) => {
   if (error instanceof ZodError) {
@@ -449,6 +449,130 @@ export const analyzeCv = async (req: Request, res: Response) => {
 
         if (response && response.text) {
           logger.info(`Successfully analyzed CV using model: ${modelConfig.name}`);
+          break;
+        } else {
+          throw new Error(`Empty response text from model ${modelConfig.name}`);
+        }
+      } catch (error: any) {
+        lastError = error;
+        logger.warn(`Model ${modelConfig.name} failed. Error: ${error.message || error}. Trying fallback model...`);
+      }
+    }
+
+    if (!response || !response.text) {
+      throw lastError || new Error("All Gemini models failed to generate content.");
+    }
+
+    const parsedData = JSON.parse(response.text);
+    return res.status(200).json(parsedData);
+  } catch (error) {
+    return handleControllerError(error, res);
+  }
+};
+
+/**
+ * Endpoint to analyze job fit score and skill gaps based on CV vs Job Description
+ * POST /api/ai/fit-score
+ */
+export const calculateJobFit = async (req: Request, res: Response) => {
+  try {
+    const { resumeText, jobDescription } = jobFitSchema.parse(req.body);
+
+    const ai = getGeminiClient();
+
+    const schema = {
+      type: "object",
+      properties: {
+        score: {
+          type: "integer",
+          description: "A suitability fit score between 0 and 100 representing how well the CV matches the Job Description requirements."
+        },
+        pros: {
+          type: "array",
+          items: { type: "string" },
+          description: "List of key qualifications/experiences from the CV that align well with the job requirements."
+        },
+        cons: {
+          type: "array",
+          items: { type: "string" },
+          description: "List of qualifications/requirements from the job description that the candidate lacks or has weak evidence of in the CV."
+        },
+        recommendations: {
+          type: "array",
+          items: { type: "string" },
+          description: "Actionable recommendations on how the candidate can bridge gaps or tailor their resume specifically for this job."
+        },
+        skillsBreakdown: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              skill: { type: "string" },
+              status: {
+                type: "string",
+                enum: ["MATCH", "PARTIAL", "MISSING"]
+              }
+            },
+            required: ["skill", "status"]
+          },
+          description: "A breakdown of specific key skills requested in the job description and their match status on the CV."
+        }
+      },
+      required: ["score", "pros", "cons", "recommendations", "skillsBreakdown"]
+    };
+
+    const prompt = `
+      You are an expert career strategist and recruiter.
+      Analyze the candidate's CV/Resume text against the Job Description.
+      
+      Candidate CV:
+      ${resumeText}
+      
+      Job Description:
+      ${jobDescription}
+      
+      Tasks:
+      1. Calculate a fit score from 0 (no matching requirements) to 100 (fully matching).
+      2. List 2-4 pros (strengths/matches).
+      3. List 2-4 cons (gaps/missing elements).
+      4. Give 2-4 tailored recommendations to bridge the gaps.
+      5. Identify 4-8 key skills/requirements in the job description and label each as "MATCH", "PARTIAL" or "MISSING" based on the candidate's CV.
+      
+      Generate a JSON response conforming strictly to the requested schema.
+    `;
+
+    const models = [
+      { name: "gemini-3.5-flash", useThinking: true },
+      { name: "gemini-3.1-flash-lite", useThinking: true },
+      { name: "gemini-3-flash-preview", useThinking: true },
+      { name: "gemini-2.5-flash", useThinking: false },
+    ];
+
+    let lastError: any = null;
+    let response: any = null;
+
+    for (const modelConfig of models) {
+      try {
+        logger.info(`Attempting job fit calculation with model: ${modelConfig.name}`);
+        const config: any = {
+          responseMimeType: "application/json",
+          responseSchema: schema,
+        };
+
+        if (modelConfig.useThinking) {
+          config.thinkingConfig = {
+            thinkingLevel: ThinkingLevel.MEDIUM,
+          };
+        }
+
+        response = await ai.models.generateContent({
+          model: modelConfig.name,
+          contents: prompt,
+          config,
+        });
+
+        if (response && response.text) {
+          logger.info(`Successfully calculated job fit using model: ${modelConfig.name}`);
           break;
         } else {
           throw new Error(`Empty response text from model ${modelConfig.name}`);

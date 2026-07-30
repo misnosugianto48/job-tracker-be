@@ -42,6 +42,7 @@ export const createApplicationSchema = z.object({
   }, z.number().int().nonnegative().nullable().optional()),
   stage: stageSchema.default(Stage.WISHLIST),
   resumeVersion: z.string().trim().nullable().optional(),
+  description: z.string().trim().nullable().optional(),
   todos: z.array(z.string()).optional(),
 });
 
@@ -136,5 +137,10 @@ export const analyzeCvSchema = z.object({
   mimeType: z.string().min(1, "mimeType is required and cannot be empty"),
   fileName: z.string().trim().optional(),
   jobDescription: z.string().trim().optional(),
+});
+
+export const jobFitSchema = z.object({
+  resumeText: z.string().trim().min(1, "resumeText is required and cannot be empty"),
+  jobDescription: z.string().trim().min(1, "jobDescription is required and cannot be empty"),
 });
 
